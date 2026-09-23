@@ -87,3 +87,115 @@ TEST(PositionTest, ParseInvalid) {
 TEST(PositionTest, ParseOutOfRange) {
     EXPECT_THROW(parse("(0, 5)"), std::logic_error);
 }
+
+TEST(ShipTest, FullConstructorHorizontal) {
+    Position p(4, 3);
+    Ship s(3, p, Horizontal);
+    EXPECT_EQ(s.size(), 3);
+    EXPECT_EQ(s.row(), 4);
+    EXPECT_EQ(s.col(), 3);
+    EXPECT_TRUE(s.direction() == Horizontal);
+}
+
+TEST(ShipTest, FullConstructorVertical) {
+    Position p(2, 5);
+    Ship s(4, p, Vertical);
+    EXPECT_EQ(s.size(), 4);
+    EXPECT_EQ(s.row(), 2);
+    EXPECT_EQ(s.col(), 5);
+    EXPECT_TRUE(s.direction() == Vertical);
+}
+
+TEST(ShipTest, FullConstructorHorizontalOutOfField) {
+    Position p(4, 9);
+    EXPECT_THROW(Ship s(3, p, Horizontal), std::logic_error);
+}
+
+TEST(ShipTest, FullConstructorVerticalOutOfField) {
+    Position p(9, 5);
+    EXPECT_THROW(Ship s(3, p, Vertical), std::logic_error);
+}
+
+TEST(ShipTest, FullConstructorInvalidSize) {
+    Position p(1, 1);
+    EXPECT_THROW(Ship s(5, p, Horizontal), std::logic_error);
+}
+
+TEST(ShipTest, FullConstructorZeroSize) {
+    Position p(1, 1);
+    EXPECT_THROW(Ship s(0, p, Horizontal), std::logic_error);
+}
+
+TEST(ShipTest, PartialConstructor) {
+    Position p(4, 3);
+    Ship s(3, p);
+    EXPECT_EQ(s.size(), 3);
+    EXPECT_EQ(s.row(), 4);
+    EXPECT_EQ(s.col(), 3);
+    EXPECT_TRUE(s.direction() == Horizontal);
+}
+
+TEST(ShipTest, PartialConstructorOutOfField) {
+    Position p(4, 9);
+    EXPECT_THROW(Ship s(3, p), std::logic_error);
+}
+
+TEST(ShipTest, CharConstructorHorizontal) {
+    Ship s(3, 'H', 4, 'C');
+    EXPECT_EQ(s.size(), 3);
+    EXPECT_EQ(s.row(), 4);
+    EXPECT_EQ(s.col(), 3);
+    EXPECT_TRUE(s.direction() == Horizontal);
+}
+
+TEST(ShipTest, CharConstructorVertical) {
+    Ship s(3, 'V', 4, 'C');
+    EXPECT_EQ(s.size(), 3);
+    EXPECT_EQ(s.row(), 4);
+    EXPECT_EQ(s.col(), 3);
+    EXPECT_TRUE(s.direction() == Vertical);
+}
+
+TEST(ShipTest, CharConstructorLowerCaseDirection) {
+    Ship s(2, 'h', 5, 'D');
+    EXPECT_EQ(s.size(), 2);
+    EXPECT_EQ(s.row(), 5);
+    EXPECT_EQ(s.col(), 4);
+    EXPECT_TRUE(s.direction() == Horizontal);
+}
+
+TEST(ShipTest, CharConstructorInvalidDirection) {
+    EXPECT_THROW(Ship s(3, 'X', 4, 'C'), std::logic_error);
+}
+
+TEST(ShipTest, CharConstructorInvalidCol) {
+    EXPECT_THROW(Ship s(3, 'H', 4, 'Z'), std::logic_error);
+}
+
+TEST(ShipTest, CharConstructorOutOfField) {
+    EXPECT_THROW(Ship s(3, 'H', 4, 'I'), std::logic_error);
+}
+
+TEST(ShipTest, RotateHorizontalToVertical) {
+    Position p(2, 5);
+    Ship s(4, p, Horizontal);
+    s.rotate();
+    EXPECT_TRUE(s.direction() == Vertical);
+    EXPECT_EQ(s.row(), 2);
+    EXPECT_EQ(s.col(), 5);
+}
+
+TEST(ShipTest, RotateVerticalToHorizontal) {
+    Position p(5, 2);
+    Ship s(4, p, Vertical);
+    s.rotate();
+    EXPECT_TRUE(s.direction() == Horizontal);
+    EXPECT_EQ(s.row(), 5);
+    EXPECT_EQ(s.col(), 2);
+}
+
+TEST(ShipTest, RotateOutOfField) {
+    Position p(4, 9);
+    Ship s(2, p, Vertical);
+    EXPECT_THROW(s.rotate(), std::logic_error);
+}
