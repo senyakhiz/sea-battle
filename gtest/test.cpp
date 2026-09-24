@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "Position.h"
+#include "Ship.h"
+#include "GameFiled.h"
 
 TEST(PositionTest, DefaultConstructor) {
     Position p;
@@ -198,4 +200,73 @@ TEST(ShipTest, RotateOutOfField) {
     Position p(4, 9);
     Ship s(2, p, Vertical);
     EXPECT_THROW(s.rotate(), std::logic_error);
+}
+
+TEST(GameFieldTest, DefaultConstructor) {
+    GameField gf;
+    EXPECT_TRUE(gf.get(1, 'A') == ' ');
+    EXPECT_TRUE(gf.get(10, 'J') == ' ');
+}
+
+TEST(GameFieldTest, InitConstructorValid) {
+    GameField gf(6, 6);
+    EXPECT_TRUE(gf.get(1, 'A') == ' ');
+    EXPECT_TRUE(gf.get(6, 'F') == ' ');
+}
+
+TEST(GameFieldTest, InitConstructorNegative) {
+    EXPECT_THROW(GameField gf(-2, 5), std::logic_error);
+}
+
+TEST(GameFieldTest, InitConstructorTooBig) {
+    EXPECT_THROW(GameField gf(26, 5), std::logic_error);
+}
+
+TEST(GameFieldTest, InitConstructorZero) {
+    EXPECT_THROW(GameField gf(0, 5), std::logic_error);
+}
+
+TEST(GameFieldTest, CopyConstructor) {
+    GameField a(6, 6);
+    a.set(2, 'C');
+    GameField b(a);
+    EXPECT_TRUE(b.get(2, 'C') == '*');
+    EXPECT_TRUE(b.get(1, 'A') == ' ');
+}
+
+TEST(GameFieldTest, SetGetValid) {
+    GameField gf(6, 6);
+    gf.set(4, 'B');
+    EXPECT_TRUE(gf.get(4, 'B') == '*');
+}
+
+TEST(GameFieldTest, SetOutOfBounds) {
+    GameField gf(6, 6);
+    EXPECT_THROW(gf.set(2, 'J'), std::logic_error);
+}
+
+TEST(GameFieldTest, GetOutOfBounds) {
+    GameField gf(6, 6);
+    EXPECT_THROW(gf.get(7, 'A'), std::logic_error);
+}
+
+TEST(GameFieldTest, ToStringFormat) {
+    GameField gf(6, 6);
+    gf.set(2, 'C');
+    gf.set(4, 'B');
+    gf.set(5, 'D');
+    gf.set(6, 'D');
+    gf.set(2, 'F');
+    gf.set(3, 'F');
+    std::string expected =
+        "  |A B C D E F|\n"
+        "  +-----------+\n"
+        "1 | | | | | | |\n"
+        "2 | | |*| | |*|\n"
+        "3 | | | | | |*|\n"
+        "4 | |*| | | | |\n"
+        "5 | | | |*| | |\n"
+        "6 | | | |*| | |\n"
+        "  +-----------+\n";
+    EXPECT_EQ(to_string(gf), expected);
 }

@@ -57,7 +57,7 @@ Ship::Ship(int size, char direction, int row, char col) {
     }
 
     Position coord(row, c);
-    if (!isValid(size, coord, dir)) {
+    if (!Correct_Input(size, coord, dir)) {
         throw std::logic_error("Invalid input: incorrect ship parameters");
     }
 
