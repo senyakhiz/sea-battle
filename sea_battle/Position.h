@@ -7,21 +7,23 @@ private:
     static const int _max_row = 10;
     static const int _max_col = 10;
 
-    static bool Correct_Input(int row, int col) noexcept;
-
 public:
 
     Position();
     Position(int row, int col);
+    Position(int row, char col);
     Position(const Position& other);
     Position(const std::string& str);
 
     int row() const noexcept;
     int col() const noexcept;
+    char char_col() const noexcept;
+
     void row(int value);
     void col(int value);
+    void col(char value);
 
-    friend std::string to_string(const Position& pos) noexcept;
-    friend Position parse(const std::string& str);
-
+    friend bool parse(const std::string& str, Position& pos);
+    friend bool is_collision(int row);
+    friend bool is_collision(char col);
 };

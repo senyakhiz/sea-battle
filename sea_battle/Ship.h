@@ -1,4 +1,3 @@
-#pragma once
 #include "Position.h"
 
 enum Direction { Horizontal, Vertical };
@@ -6,24 +5,29 @@ enum Direction { Horizontal, Vertical };
 class Ship {
 private:
     int _size;
-    Position _coord;
+    Position _position;
     Direction _direction;
 
-    static bool Correct_Input(int size, const Position& coord, Direction dir) noexcept;
-
 public:
-    Ship(int size, const Position& coord, Direction direction);
-    Ship(int size, const Position& coord);
-    Ship(int size, char direction, int row, char col);
 
-    Ship() = delete;
-    Ship(const Ship&) = delete;
+    Ship(int size, Position position, Direction direction);
+    Ship(int size, char direction, int row, char col);
+    Ship(const std::string& str);
 
     int size() const noexcept;
-    Direction direction() const noexcept;
     int row() const noexcept;
     int col() const noexcept;
+    Position position() const noexcept;
+    Direction direction() const noexcept;
 
-    void rotate();
+    void size(int value);
+    void row(int value);
+    void col(int value);
+    void col(char value);
+    void direction(Direction value);
+    void direction(char value);
+    void position(Position value);
 
+    friend bool parse(const std::string& str, Ship& ship);
+    friend bool is_collision(int size, Position position, Direction direction);
 };

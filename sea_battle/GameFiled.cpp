@@ -1,9 +1,7 @@
 #include "GameField.h"
 #include <stdexcept>
-
-bool GameField::Correct_Input(int n, int m) noexcept {
-    return n > 0 && n <= 25 && m > 0 && m <= 25;
-}
+#include <cctype>
+#include <string>
 
 GameField::GameField() : _n(10), _m(10) {
     _field = new char* [10];
@@ -16,8 +14,8 @@ GameField::GameField() : _n(10), _m(10) {
 }
 
 GameField::GameField(int n, int m) : _n(n), _m(m) {
-    if (!Correct_Input(n, m)) {
-        throw std::logic_error("Invalid input: incorrect field parameters");
+    if (n <= 0 || n > 25 || m <= 0 || m > 25) {
+        throw std::logic_error("Invalid input: incorrect field");
     }
     _field = new char* [n];
     for (int i = 0; i < n; ++i) {
@@ -45,21 +43,111 @@ GameField::~GameField() {
     delete[] _field;
 }
 
-void GameField::set(int row, char col) {
-    if (row < 1 || row > _n || col < 'A' || col >= 'A' + _m) {
-        throw std::logic_error("Invalid input: incorrect position");
+void GameField::set(const Ship& ship) {
+    if (is_collision(*this, ship)) {
+        throw std::logic_error("Invalid input: incorrect field");
     }
-    _field[row - 1][col - 'A'] = '*';
+    int row = ship.row();
+    int col = ship.col();
+    int size = ship.size();
+    Direction dir = ship.direction();
+    for (int i = 0; i < size; ++i) {
+        int r = row + (dir == Vertical ? i : 0);
+        int c = col + (dir == Horizontal ? i : 0);
+        _field[r - 1][c - 1] = '*';
+    }
 }
 
-char GameField::get(int row, char col) const {
-    if (row < 1 || row > _n || col < 'A' || col >= 'A' + _m) {
-        throw std::logic_error("Invalid input: incorrect position");
+State GameField::set(int row, char col) {
+    char upper = static_cast<char>(std::toupper(static_cast<unsigned char>(col)));
+    int c = upper - 'A' + 1;
+    if (row < 1 || row > _n || c < 1 || c > _m) {
+        throw std::logic_error("Invalid input: incorrect move");
     }
-    return _field[row - 1][col - 'A'];
+    char cell = _field[row - 1][c - 1];
+    if (cell == '.' || cell == 'X') {
+        throw std::logic_error("Invalid input: incorrect move");
+    }
+    if (cell == ' ') {
+        _field[row - 1][c - 1] = '.';
+        return Missed;
+    }
+    _field[row - 1][c - 1] = 'X';
+    int destroyed = check_destroy(row, c);
+    switch (destroyed) {
+    case 1: return BoatDestroyed;
+    case 2: return DestroyersDestroyed;
+    case 3: return CruisersDestroyed;
+    case 4: return BattleshipDestroyed;
+    default: return Hit;
+    }
 }
 
-std::string to_string(const GameField& gf) {
+int GameField::check_destroy(int row, int col) const {
+    int left = col;
+    while (left > 1) {
+        char ch = _field[row - 1][left - 2];
+        if (ch != '*' && ch != 'X') break;
+        --left;
+    }
+    int right = col;
+    while (right < _m) {
+        char ch = _field[row - 1][right];
+        if (ch != '*' && ch != 'X') break;
+        ++right;
+    }
+    int h_size = right - left + 1;
+
+    int up = row;
+    while (up > 1) {
+        char ch = _field[up - 2][col - 1];
+        if (ch != '*' && ch != 'X') break;
+        --up;
+    }
+    int down = row;
+    while (down < _n) {
+        char ch = _field[down][col - 1];
+        if (ch != '*' && ch != 'X') break;
+        ++down;
+    }
+    int v_size = down - up + 1;
+
+    if (h_size >= v_size) {
+        for (int c = left; c <= right; ++c) {
+            if (_field[row - 1][c - 1] != 'X') return 0;
+        }
+        return h_size;
+    }
+    for (int r = up; r <= down; ++r) {
+        if (_field[r - 1][col - 1] != 'X') return 0;
+    }
+    return v_size;
+}
+
+bool is_collision(const GameField& gf, const Ship& ship) {
+    int row = ship.row();
+    int col = ship.col();
+    int size = ship.size();
+    Direction dir = ship.direction();
+
+    for (int i = 0; i < size; ++i) {
+        int r = row + (dir == Vertical ? i : 0);
+        int c = col + (dir == Horizontal ? i : 0);
+        if (r < 1 || r > gf._n || c < 1 || c > gf._m) return true;
+        for (int dr = -1; dr <= 1; ++dr) {
+            for (int dc = -1; dc <= 1; ++dc) {
+                int nr = r + dr;
+                int nc = c + dc;
+                if (nr >= 1 && nr <= gf._n && nc >= 1 && nc <= gf._m) {
+                    if (gf._field[nr - 1][nc - 1] == '*') return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+std::string to_string(const GameField& gf, bool show_ships) {
     std::string result;
 
     result += "  |";
@@ -77,11 +165,14 @@ std::string to_string(const GameField& gf) {
     result += "+\n";
 
     for (int i = 0; i < gf._n; ++i) {
-        result += std::to_string(i + 1);
-        result += ' ';
+        std::string label = std::to_string(i + 1);
+        while (label.length() < 2) label += ' ';
+        result += label;
         for (int j = 0; j < gf._m; ++j) {
+            char ch = gf._field[i][j];
+            if (!show_ships && ch == '*') ch = ' ';
             result += '|';
-            result += gf._field[i][j];
+            result += ch;
         }
         result += "|\n";
     }

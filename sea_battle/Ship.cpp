@@ -1,37 +1,73 @@
 #include "Ship.h"
-#include <stdexcept>
+#include <sstream>
 #include <cctype>
+#include <stdexcept>
 
-bool Ship::Correct_Input(int size, const Position& coord, Direction dir) noexcept {
+bool is_collision(int size, Position position, Direction direction) {
     if (size < 1 || size > 4) {
         return false;
     }
-    int r = coord.row();
-    int c = coord.col();
-    if (dir == Horizontal) {
-        return (c + size - 1 <= 10) && (r >= 1 && r <= 10);
+    if (!is_collision(position.row())) {
+        return false;
+    }
+    if (!is_collision(position.char_col())) {
+        return false;
+    }
+    if (direction == Horizontal) {
+        return is_collision(position.col() + size - 1);
+    }
+    return is_collision(position.row() + size - 1);
+}
+
+bool parse(const std::string& str, Ship& ship) {
+    std::istringstream ss(str);
+    int size;
+    char direction;
+    std::string pos_str;
+
+    if (!(ss >> size)) {
+        return false;
+    }
+    if (!(ss >> direction)) {
+        return false;
+    }
+    if (!(ss >> pos_str)) {
+        return false;
+    }
+
+    Direction dir;
+    if (direction == 'H' || direction == 'h') {
+        dir = Horizontal;
+    }
+    else if (direction == 'V' || direction == 'v') {
+        dir = Vertical;
     }
     else {
-        return (r + size - 1 <= 10) && (c >= 1 && c <= 10);
+        return false;
     }
+
+    Position pos(1, 1);
+    if (!parse(pos_str, pos)) {
+        return false;
+    }
+
+    if (!is_collision(size, pos, dir)) {
+        return false;
+    }
+
+    ship._size = size;
+    ship._position = pos;
+    ship._direction = dir;
+    return true;
 }
 
-Ship::Ship(int size, const Position& coord, Direction direction) {
-    if (!isValid(size, coord, direction)) {
-        throw std::logic_error("Invalid input: incorrect ship parameters");
+Ship::Ship(int size, Position position, Direction direction) {
+    if (!is_collision(size, position, direction)) {
+        throw std::logic_error("Invalid input: incorrect ship");
     }
     _size = size;
-    _coord = coord;
+    _position = position;
     _direction = direction;
-}
-
-Ship::Ship(int size, const Position& coord) {
-    if (!Correct_Input(size, coord, Horizontal)) {
-        throw std::logic_error("Invalid input: incorrect ship parameters");
-    }
-    _size = size;
-    _coord = coord;
-    _direction = Horizontal;
 }
 
 Ship::Ship(int size, char direction, int row, char col) {
@@ -43,49 +79,121 @@ Ship::Ship(int size, char direction, int row, char col) {
         dir = Vertical;
     }
     else {
-        throw std::logic_error("Invalid input: incorrect ship parameters");
+        throw std::logic_error("Invalid input: incorrect ship");
     }
 
-    char upper = static_cast<char>(std::toupper(static_cast<unsigned char>(col)));
-    if (upper < 'A' || upper > 'J') {
-        throw std::logic_error("Invalid input: incorrect ship parameters");
+    if (!is_collision(row) || !is_collision(col)) {
+        throw std::logic_error("Invalid input: incorrect ship");
     }
-    int c = upper - 'A' + 1;
+    Position pos(row, col);
 
-    if (row < 1 || row > 10 || c < 1 || c > 10) {
-        throw std::logic_error("Invalid input: incorrect ship parameters");
-    }
-
-    Position coord(row, c);
-    if (!Correct_Input(size, coord, dir)) {
-        throw std::logic_error("Invalid input: incorrect ship parameters");
+    if (!is_collision(size, pos, dir)) {
+        throw std::logic_error("Invalid input: incorrect ship");
     }
 
     _size = size;
-    _coord = coord;
+    _position = pos;
     _direction = dir;
+}
+
+Ship::Ship(const std::string& str) {
+    _size = 1;
+    _position = Position(1, 1);
+    _direction = Horizontal;
+    if (!parse(str, *this)) {
+        throw std::logic_error("Invalid input: incorrect ship");
+    }
 }
 
 int Ship::size() const noexcept {
     return _size;
 }
 
+int Ship::row() const noexcept {
+    return _position.row();
+}
+
+int Ship::col() const noexcept {
+    return _position.col();
+}
+
+Position Ship::position() const noexcept {
+    return _position;
+}
+
 Direction Ship::direction() const noexcept {
     return _direction;
 }
 
-int Ship::row() const noexcept {
-    return _coord.row();
-}
-
-int Ship::col() const noexcept {
-    return _coord.col();
-}
-
-void Ship::rotate() {
-    Direction new_dir = (_direction == Horizontal) ? Vertical : Horizontal;
-    if (Correct_Input(_size, _coord, new_dir)) {
-        throw std::logic_error("Invalid input: incorrect ship parameters");
+void Ship::size(int value) {
+    if (!is_collision(value, _position, _direction)) {
+        throw std::logic_error("Invalid input: incorrect ship");
     }
-    _direction = new_dir;
+    _size = value;
+}
+
+void Ship::row(int value) {
+    if (!is_collision(value)) {
+        throw std::logic_error("Invalid input: incorrect ship");
+    }
+    Position p(value, _position.col());
+    if (!is_collision(_size, p, _direction)) {
+        throw std::logic_error("Invalid input: incorrect ship");
+    }
+    _position = p;
+}
+
+void Ship::col(int value) {
+    if (!is_collision(value)) {
+        throw std::logic_error("Invalid input: incorrect ship");
+    }
+    Position p(_position.row(), value);
+    if (!is_collision(_size, p, _direction)) {
+        throw std::logic_error("Invalid input: incorrect ship");
+    }
+    _position = p;
+}
+
+void Ship::col(char value) {
+    if (!is_collision(value)) {
+        throw std::logic_error("Invalid input: incorrect ship");
+    }
+    int c = std::toupper(static_cast<unsigned char>(value)) - 'A' + 1;
+    Position p(_position.row(), c);
+    if (!is_collision(_size, p, _direction)) {
+        throw std::logic_error("Invalid input: incorrect ship");
+    }
+    _position = p;
+}
+
+void Ship::direction(Direction value) {
+    if (!is_collision(_size, _position, value)) {
+        throw std::logic_error("Invalid input: incorrect ship");
+    }
+    _direction = value;
+}
+
+void Ship::direction(char value) {
+    Direction dir;
+    if (value == 'H' || value == 'h') {
+        dir = Horizontal;
+    }
+    else if (value == 'V' || value == 'v') {
+        dir = Vertical;
+    }
+    else {
+        throw std::logic_error("Invalid input: incorrect ship");
+    }
+
+    if (!is_collision(_size, _position, dir)) {
+        throw std::logic_error("Invalid input: incorrect ship");
+    }
+    _direction = dir;
+}
+
+void Ship::position(Position value) {
+    if (!is_collision(_size, value, _direction)) {
+        throw std::logic_error("Invalid input: incorrect ship");
+    }
+    _position = value;
 }
