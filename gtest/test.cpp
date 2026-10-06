@@ -3,6 +3,7 @@
 #include "Ship.h"
 #include "GameField.h"
 #include "Player.h"
+#include "Game.h"
 
 TEST(PositionClass, IsRowValid) {
     EXPECT_TRUE(is_row(1));
@@ -554,4 +555,72 @@ TEST(PlayerClass, ShowFieldShowsShipByDefault) {
 
     const std::string s = buffer.str();
     EXPECT_TRUE(s.find("1 |*| | | | | | | | | |") != std::string::npos);
+}
+
+TEST(GameClass, ConstructsOk) {
+    Game g;
+    SUCCEED();
+}
+
+TEST(GameClass, UserWinsFullFleet) {
+    std::stringstream input;
+
+    input << "1 H 1 A\n";
+    input << "1 H 1 C\n";
+    input << "1 H 1 E\n";
+    input << "1 H 1 G\n";
+    input << "2 H 3 A\n";
+    input << "2 H 3 D\n";
+    input << "2 H 3 G\n";
+    input << "3 H 5 A\n";
+    input << "3 H 5 E\n";
+    input << "4 H 7 A\n";
+    input << "\n";
+
+    input << "1 H 1 A\n";
+    input << "1 H 1 C\n";
+    input << "1 H 1 E\n";
+    input << "1 H 1 G\n";
+    input << "2 H 3 A\n";
+    input << "2 H 3 D\n";
+    input << "2 H 3 G\n";
+    input << "3 H 5 A\n";
+    input << "3 H 5 E\n";
+    input << "4 H 7 A\n";
+    input << "\n";
+
+    input << "1 A\n";
+    input << "1 C\n";
+    input << "1 E\n";
+    input << "1 G\n";
+    input << "3 A\n";
+    input << "3 B\n";
+    input << "3 D\n";
+    input << "3 E\n";
+    input << "3 G\n";
+    input << "3 H\n";
+    input << "5 A\n";
+    input << "5 B\n";
+    input << "5 C\n";
+    input << "5 E\n";
+    input << "5 F\n";
+    input << "5 G\n";
+    input << "7 A\n";
+    input << "7 B\n";
+    input << "7 C\n";
+    input << "7 D\n";
+
+    std::streambuf* old_in = std::cin.rdbuf(input.rdbuf());
+
+    std::stringstream output;
+    std::streambuf* old_out = std::cout.rdbuf(output.rdbuf());
+
+    Game g;
+    g.start();
+
+    std::cin.rdbuf(old_in);
+    std::cout.rdbuf(old_out);
+
+    const std::string s = output.str();
+    EXPECT_TRUE(s.find("USER WIN!") != std::string::npos);
 }
