@@ -26,11 +26,9 @@ bool is_collision(int size, Position position, Direction direction) noexcept {
     const int col = position.get_col();
 
     if (direction == Horizontal) {
-        return col - (size - 1) >= 1;
+        return col + (size - 1) <= 10;   
     }
-    else {
-        return row - (size - 1) >= 1;
-    }
+    return row + (size - 1) <= 10;      
 }
 
 Ship::Ship(int size, Position position, Direction direction) {

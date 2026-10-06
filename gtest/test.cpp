@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "Position.h"
+#include "Ship.h"
+#include "GameField.h"
 
 TEST(PositionClass, IsRowValid) {
     EXPECT_TRUE(is_row(1));
@@ -159,19 +161,19 @@ TEST(ShipClass, IsCollisionSizeOutOfRange) {
 }
 
 TEST(ShipClass, IsCollisionHorizontalFits) {
-    EXPECT_TRUE(is_collision(4, Position(1, 4), Horizontal));
+    EXPECT_TRUE(is_collision(4, Position(1, 7), Horizontal));   
 }
 
 TEST(ShipClass, IsCollisionHorizontalDoesNotFit) {
-    EXPECT_FALSE(is_collision(4, Position(1, 3), Horizontal));
+    EXPECT_FALSE(is_collision(4, Position(1, 8), Horizontal));  
 }
 
 TEST(ShipClass, IsCollisionVerticalFits) {
-    EXPECT_TRUE(is_collision(4, Position(4, 1), Vertical));
+    EXPECT_TRUE(is_collision(4, Position(7, 1), Vertical));     
 }
 
 TEST(ShipClass, IsCollisionVerticalDoesNotFit) {
-    EXPECT_FALSE(is_collision(4, Position(3, 1), Vertical));
+    EXPECT_FALSE(is_collision(4, Position(8, 1), Vertical));    
 }
 
 TEST(ShipClass, InitCtorValidValues) {
@@ -188,7 +190,7 @@ TEST(ShipClass, InitCtorInvalidSize) {
 }
 
 TEST(ShipClass, InitCtorInvalidPlacement) {
-    EXPECT_THROW(Ship s(4, Position(1, 2), Horizontal), std::logic_error);
+    EXPECT_THROW(Ship s(4, Position(1, 8), Horizontal), std::logic_error);
 }
 
 TEST(ShipClass, StandardCtorValidUppercase) {
@@ -210,7 +212,7 @@ TEST(ShipClass, StandardCtorInvalidDirectionChar) {
 }
 
 TEST(ShipClass, StandardCtorInvalidPlacement) {
-    EXPECT_THROW(Ship s(4, 'V', 3, 'A'), std::logic_error);
+    EXPECT_THROW(Ship s(4, 'H', 1, 'H'), std::logic_error);
 }
 
 TEST(ShipClass, ParseValidSimple) {
@@ -229,10 +231,11 @@ TEST(ShipClass, ParseValidTenF) {
 }
 
 TEST(ShipClass, ParseValidTenA) {
-    Ship s("3 H 10a");
+    Ship s("3 H 10a");                
     EXPECT_EQ(s.size(), 3);
     EXPECT_EQ(s.row(), 10);
-    EXPECT_EQ(s.col(), 10);
+    EXPECT_EQ(s.col(), 1);
+    EXPECT_EQ(s.direction(), Horizontal);
 }
 
 TEST(ShipClass, ParseValidLowercaseDirection) {
@@ -253,11 +256,133 @@ TEST(ShipClass, ParseInvalidDirection) {
 }
 
 TEST(ShipClass, ParseInvalidPlacement) {
-    EXPECT_THROW(Ship s("4 H 1 B"), std::logic_error);
+    EXPECT_THROW(Ship s("4 H 1 H"), std::logic_error);
 }
 
 TEST(ShipClass, ParseInvalidFormat) {
     EXPECT_THROW(Ship s(""), std::logic_error);
     EXPECT_THROW(Ship s("H 1 4B"), std::logic_error);
     EXPECT_THROW(Ship s("1 H"), std::logic_error);
+}
+
+TEST(GameFieldClass, DefaultEmptyField) {
+    GameField f;
+    std::string s = to_string(f, true);
+    EXPECT_TRUE(s.find("  |A B C D E F G H I J|") != std::string::npos);
+    EXPECT_TRUE(s.find("  +-------------------+") != std::string::npos);
+    EXPECT_TRUE(s.find("1 | | | | | | | | | | |") != std::string::npos);
+    EXPECT_TRUE(s.find("10 | | | | | | | | | | |") != std::string::npos);
+}
+
+TEST(GameFieldClass, PlaceShipAndShow) {
+    GameField f;
+    f.set(Ship(1, Position(1, 'A'), Horizontal));
+    std::string s = to_string(f, true);
+    EXPECT_TRUE(s.find("1 |*| | | | | | | | | |") != std::string::npos);
+}
+
+TEST(GameFieldClass, PlaceShipHidden) {
+    GameField f;
+    f.set(Ship(1, Position(1, 'A'), Horizontal));
+    std::string s = to_string(f);
+    EXPECT_TRUE(s.find("1 | | | | | | | | | | |") != std::string::npos);
+}
+
+TEST(GameFieldClass, MissReturnsMissed) {
+    GameField f;
+    EXPECT_EQ(f.set(1, 'A'), Missed);
+}
+
+TEST(GameFieldClass, MissRendersDot) {
+    GameField f;
+    f.set(1, 'A');
+    std::string s = to_string(f);
+    EXPECT_TRUE(s.find("1 |.| | | | | | | | | |") != std::string::npos);
+}
+
+TEST(GameFieldClass, LowercaseMoveValid) {
+    GameField f;
+    EXPECT_EQ(f.set(1, 'a'), Missed);
+}
+
+
+TEST(GameFieldClass, HitSingleShipDestroyed) {
+    GameField f;
+    f.set(Ship(1, Position(1, 'A'), Horizontal));
+    EXPECT_EQ(f.set(1, 'A'), BoatDestroyed);
+}
+
+TEST(GameFieldClass, HitTwoShipNotDestroyed) {
+    GameField f;
+    f.set(Ship(2, Position(1, 'B'), Horizontal));
+    EXPECT_EQ(f.set(1, 'B'), Hit);
+}
+
+TEST(GameFieldClass, HitTwoShipDestroyed) {
+    GameField f;
+    f.set(Ship(2, Position(1, 'B'), Horizontal));
+    f.set(1, 'B');
+    EXPECT_EQ(f.set(1, 'C'), DestroyersDestroyed);
+}
+
+TEST(GameFieldClass, HitThreeShipDestroyed) {
+    GameField f;
+    f.set(Ship(3, Position(1, 'B'), Horizontal));
+    f.set(1, 'B');
+    f.set(1, 'C');
+    EXPECT_EQ(f.set(1, 'D'), CruisersDestroyed);
+}
+
+TEST(GameFieldClass, HitFourShipDestroyed) {
+    GameField f;
+    f.set(Ship(4, Position(1, 'B'), Horizontal));
+    f.set(1, 'B');
+    f.set(1, 'C');
+    f.set(1, 'D');
+    EXPECT_EQ(f.set(1, 'E'), BattleshipDestroyed);
+}
+
+TEST(GameFieldClass, RepeatedMoveThrows) {
+    GameField f;
+    f.set(1, 'A');
+    EXPECT_THROW(f.set(1, 'A'), std::logic_error);
+}
+
+TEST(GameFieldClass, MoveOutOfBoundsThrows) {
+    GameField f;
+    EXPECT_THROW(f.set(0, 'A'), std::logic_error);
+    EXPECT_THROW(f.set(11, 'A'), std::logic_error);
+    EXPECT_THROW(f.set(1, 'K'), std::logic_error);
+}
+
+TEST(GameFieldClass, CollisionWithNeighbor) {
+    GameField f;
+    f.set(Ship(1, Position(1, 'A'), Horizontal));
+    EXPECT_TRUE(is_collision(f, Ship(1, Position(1, 'B'), Horizontal)));
+}
+
+TEST(GameFieldClass, CollisionWithDiagonal) {
+    GameField f;
+    f.set(Ship(1, Position(1, 'A'), Horizontal));
+    EXPECT_TRUE(is_collision(f, Ship(1, Position(2, 'A'), Horizontal)));
+    EXPECT_TRUE(is_collision(f, Ship(1, Position(2, 'B'), Horizontal)));
+}
+
+TEST(GameFieldClass, CollisionSameCell) {
+    GameField f;
+    f.set(Ship(1, Position(1, 'A'), Horizontal));
+    EXPECT_TRUE(is_collision(f, Ship(1, Position(1, 'A'), Horizontal)));
+}
+
+TEST(GameFieldClass, NoCollisionFar) {
+    GameField f;
+    f.set(Ship(1, Position(1, 'A'), Horizontal));
+    EXPECT_FALSE(is_collision(f, Ship(1, Position(1, 'C'), Horizontal)));
+    EXPECT_FALSE(is_collision(f, Ship(1, Position(3, 'A'), Horizontal)));
+}
+
+TEST(GameFieldClass, SetCollidingShipThrows) {
+    GameField f;
+    f.set(Ship(1, Position(1, 'A'), Horizontal));
+    EXPECT_THROW(f.set(Ship(1, Position(1, 'B'), Horizontal)), std::logic_error);
 }
