@@ -9,13 +9,22 @@ Game::Game() : _move_index(0) {}
 void Game::user_init(std::string input) {
     std::stringstream ss(input);
     std::string line;
+
     while (std::getline(ss, line)) {
-        if (line.empty()) {
-            continue;
+        if (line.empty()) continue;
+
+        try {
+            _user.set_ship(Ship(line));
         }
-        _user.set_ship(Ship(line));
+        catch (const std::exception& e) {
+            std::cerr << "[ИГРОК] ошибка на строке \"" << line
+                << "\": " << e.what() << '\n';
+            throw;
+        }
     }
+
     if (!_user.check_ready()) {
+        std::cerr << "[ИГРОК] расстановка неполная. Нужно: 4x1, 3x2, 2x3, 1x4.\n";
         throw std::logic_error("Invalid input: incorrect field");
     }
 }
@@ -23,13 +32,22 @@ void Game::user_init(std::string input) {
 void Game::computer_init(std::string input) {
     std::stringstream ss(input);
     std::string line;
+
     while (std::getline(ss, line)) {
-        if (line.empty()) {
-            continue;
+        if (line.empty()) continue;
+
+        try {
+            _computer.set_ship(Ship(line));
         }
-        _computer.set_ship(Ship(line));
+        catch (const std::exception& e) {
+            std::cerr << "[КОМПЬЮТЕР] ошибка на строке \"" << line
+                << "\": " << e.what() << '\n';
+            throw;
+        }
     }
+
     if (!_computer.check_ready()) {
+        std::cerr << "[КОМПЬЮТЕР] расстановка неполная.\n";
         throw std::logic_error("Invalid input: incorrect field");
     }
 }
@@ -78,7 +96,7 @@ State Game::computer_move() {
             }
         }
 
-        return _user.set_action(row, col);
+        return _user.set_action(row, static_cast<char>('A' + col - 1));
     }
 
     throw std::logic_error("Invalid input: incorrect move");
@@ -103,9 +121,12 @@ void Game::start() {
     std::string user_ships;
     std::string computer_ships;
 
+    std::cout << "=== Введите корабли ИГРОКА (10 строк, пустая строка — конец) ===\n";
     while (std::getline(std::cin, line) && !line.empty()) {
         user_ships += line + "\n";
     }
+
+    std::cout << "=== Введите корабли КОМПЬЮТЕРА (10 строк, пустая строка — конец) ===\n";
     while (std::getline(std::cin, line) && !line.empty()) {
         computer_ships += line + "\n";
     }
@@ -113,6 +134,7 @@ void Game::start() {
     user_init(user_ships);
     computer_init(computer_ships);
 
+    std::cout << "\n=== Игра началась ===\n";
     show_game_window();
 
     while (!is_end()) {
@@ -126,9 +148,7 @@ void Game::start() {
             show_game_window();
         }
 
-        if (is_end()) {
-            break;
-        }
+        if (is_end()) break;
 
         s = computer_move();
         show_game_window();
