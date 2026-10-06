@@ -21,13 +21,13 @@ public:
     Position(const Position& other) noexcept;
     Position(const std::string& str);
 
-    int getRow() const noexcept;
-    int getCol() const noexcept;
-    char getCharCol() const noexcept;
+    int get_row() const noexcept;
+    int get_col() const noexcept;
+    char get_char_col() const noexcept;
 
-    void setRow(int row);
-    void setCol(int col);
-    void setCol(char col);
+    void set_row(int row);
+    void set_col(int col);
+    void set_col(char col);
 
 private:
     friend bool parse(const std::string& str, Position& pos) noexcept;

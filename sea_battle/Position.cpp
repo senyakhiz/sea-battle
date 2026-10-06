@@ -66,33 +66,33 @@ Position::Position(const std::string& str) {
     }
 }
 
-int Position::getRow() const noexcept {
+int Position::get_row() const noexcept {
     return _row;
 }
 
-int Position::getCol() const noexcept {
+int Position::get_col() const noexcept {
     return _col;
 }
 
-char Position::getCharCol() const noexcept {
+char Position::get_char_col() const noexcept {
     return col_to_char(_col);
 }
 
-void Position::setRow(int row) {
+void Position::set_row(int row) {
     if (!is_row(row)) {
         throw std::logic_error("Invalid input: incorrect position");
     }
     _row = row;
 }
 
-void Position::setCol(int col) {
+void Position::set_col(int col) {
     if (!is_col(col_to_char(col))) {
         throw std::logic_error("Invalid input: incorrect position");
     }
     _col = col;
 }
 
-void Position::setCol(char col) {
+void Position::set_col(char col) {
     if (!is_col(col)) {
         throw std::logic_error("Invalid input: incorrect position");
     }
