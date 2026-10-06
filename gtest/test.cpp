@@ -2,6 +2,7 @@
 #include "Position.h"
 #include "Ship.h"
 #include "GameField.h"
+#include "Player.h"
 
 TEST(PositionClass, IsRowValid) {
     EXPECT_TRUE(is_row(1));
@@ -385,4 +386,172 @@ TEST(GameFieldClass, SetCollidingShipThrows) {
     GameField f;
     f.set(Ship(1, Position(1, 'A'), Horizontal));
     EXPECT_THROW(f.set(Ship(1, Position(1, 'B'), Horizontal)), std::logic_error);
+}
+
+TEST(PlayerClass, DefaultNotReady) {
+    Player p;
+    EXPECT_FALSE(p.check_ready());
+}
+
+TEST(PlayerClass, DefaultNotLose) {
+    Player p;
+    EXPECT_FALSE(p.check_lose());
+}
+
+TEST(PlayerClass, SetOneShipOk) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+    EXPECT_FALSE(p.check_ready());
+}
+
+TEST(PlayerClass, SetAllShipsReady) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+    p.set_ship(Ship("1 H 1 C"));
+    p.set_ship(Ship("1 H 1 E"));
+    p.set_ship(Ship("1 H 1 G"));
+    p.set_ship(Ship("2 H 3 A"));
+    p.set_ship(Ship("2 H 3 D"));
+    p.set_ship(Ship("2 H 3 G"));
+    p.set_ship(Ship("3 H 5 A"));
+    p.set_ship(Ship("3 H 5 E"));
+    p.set_ship(Ship("4 H 8 A"));
+    EXPECT_TRUE(p.check_ready());
+}
+
+TEST(PlayerClass, SetTooManyOneDeckers) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+    p.set_ship(Ship("1 H 1 C"));
+    p.set_ship(Ship("1 H 1 E"));
+    p.set_ship(Ship("1 H 1 G"));
+    EXPECT_THROW(p.set_ship(Ship("1 H 1 I")), std::logic_error);
+}
+
+TEST(PlayerClass, SetTooManyTwoDeckers) {
+    Player p;
+    p.set_ship(Ship("2 H 1 A"));
+    p.set_ship(Ship("2 H 3 A"));
+    p.set_ship(Ship("2 H 5 A"));
+    EXPECT_THROW(p.set_ship(Ship("2 H 7 A")), std::logic_error);
+}
+
+TEST(PlayerClass, SetCollidingShipThrows) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+    EXPECT_THROW(p.set_ship(Ship("1 H 1 B")), std::logic_error);
+}
+
+TEST(PlayerClass, SetActionMiss) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+    EXPECT_EQ(p.set_action(1, 'C'), Missed);
+}
+
+TEST(PlayerClass, SetActionHitFirst) {
+    Player p;
+    p.set_ship(Ship("2 H 1 A"));
+    EXPECT_EQ(p.set_action(1, 'A'), Hit);
+}
+
+TEST(PlayerClass, SetActionDestroyTwoDeck) {
+    Player p;
+    p.set_ship(Ship("2 H 1 A"));
+    p.set_action(1, 'A');
+    EXPECT_EQ(p.set_action(1, 'B'), DestroyersDestroyed);
+}
+
+TEST(PlayerClass, SetActionDestroyOneDeck) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+    EXPECT_EQ(p.set_action(1, 'A'), BoatDestroyed);
+}
+
+TEST(PlayerClass, SetActionInvalidMove) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+    p.set_action(1, 'A');
+    EXPECT_THROW(p.set_action(1, 'A'), std::logic_error);
+}
+
+TEST(PlayerClass, ReadyAfterAllPlaced) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+    p.set_ship(Ship("1 H 1 C"));
+    p.set_ship(Ship("1 H 1 E"));
+    p.set_ship(Ship("1 H 1 G"));
+    p.set_ship(Ship("2 H 3 A"));
+    p.set_ship(Ship("2 H 3 D"));
+    p.set_ship(Ship("2 H 3 G"));
+    p.set_ship(Ship("3 H 5 A"));
+    p.set_ship(Ship("3 H 5 E"));
+    p.set_ship(Ship("4 H 8 A"));
+    EXPECT_TRUE(p.check_ready());
+}
+
+TEST(PlayerClass, NotLoseWhileSomeShipsAlive) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+    p.set_ship(Ship("1 H 1 C"));
+    p.set_action(1, 'A');
+    EXPECT_FALSE(p.check_lose());
+}
+
+TEST(PlayerClass, LoseAfterAllDestroyed) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+    p.set_action(1, 'A');
+    EXPECT_TRUE(p.check_lose());
+}
+
+TEST(PlayerClass, ShowFieldEmptyHasShipsLeft) {
+    Player p;
+
+    std::stringstream buffer;
+    std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
+    p.show_field();
+    std::cout.rdbuf(old);
+
+    const std::string s = buffer.str();
+    EXPECT_TRUE(s.find("Ships Left:") != std::string::npos);
+    EXPECT_TRUE(s.find("* - 0 ** - 0 *** - 0 **** - 0") != std::string::npos);
+}
+
+TEST(PlayerClass, ShowFieldAfterOneShipPlaced) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+
+    std::stringstream buffer;
+    std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
+    p.show_field();
+    std::cout.rdbuf(old);
+
+    const std::string s = buffer.str();
+    EXPECT_TRUE(s.find("* - 1 ** - 0 *** - 0 **** - 0") != std::string::npos);
+}
+
+TEST(PlayerClass, ShowFieldHidesShipWhenAsked) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+
+    std::stringstream buffer;
+    std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
+    p.show_field(true);
+    std::cout.rdbuf(old);
+
+    const std::string s = buffer.str();
+    EXPECT_TRUE(s.find("1 | | | | | | | | | | |") != std::string::npos);
+}
+
+TEST(PlayerClass, ShowFieldShowsShipByDefault) {
+    Player p;
+    p.set_ship(Ship("1 H 1 A"));
+
+    std::stringstream buffer;
+    std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
+    p.show_field();
+    std::cout.rdbuf(old);
+
+    const std::string s = buffer.str();
+    EXPECT_TRUE(s.find("1 |*| | | | | | | | | |") != std::string::npos);
 }
